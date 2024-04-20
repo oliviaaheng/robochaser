@@ -10,11 +10,31 @@ def getHyperparams():
 
     trainingRate = 0.01
 
-    loss = 'mse'
+    return [epochs, batchSize, trainingRate]
 
-    return [epochs, batchSize, trainingRate, loss]
+def customLoss(true, pred):
+    # Isolate the first element and the remaining elements
+    first_element_true = true[:, 0]
+    first_element_pred = pred[:, 0]
+    remaining_true = true[:, 1:]
+    remaining_pred = pred[:, 1:]
 
-def getLocatorModel(rate, loss):
+    # Compute MSE for the first element
+    mse_first = tf.reduce_mean(tf.square(first_element_true - first_element_pred))
+
+    # Compute MSE for the remaining four elements
+    mse_remaining = tf.reduce_mean(tf.square(remaining_true - remaining_pred), axis=1)
+
+    # Multiply the MSE of the remaining elements by the first element of the label
+    # If the label is all zeros (no image detected), the loss will only be dependent on the
+    # confidence score, the first elements. Loss will be higher if a high confidence score 
+    # is given to a zero nothing label.
+    custom_loss = first_element_true * mse_remaining + mse_first
+
+    # Average this custom loss over the batch
+    return tf.reduce_mean(custom_loss)
+
+def getLocatorModel(rate):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(32, (3, 3), padding='same'),
         tf.keras.layers.BatchNormalization(),
@@ -31,7 +51,7 @@ def getLocatorModel(rate, loss):
 
     model.compile(
         optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=rate), 
-        loss=loss, 
+        loss=customLoss, 
         metrics=['accuracy'],
     )
 
@@ -49,7 +69,7 @@ def main():
 
     params = getHyperparams()
 
-    locator = getLocatorModel(params[2], params[3])
+    locator = getLocatorModel(params[2])
 
     trainStats = locator.fit(x_train, y_train,
                     batch_size=params[1],  # Specify your desired batch size
