@@ -3,6 +3,7 @@ import tensorflow as tf
 import numpy as np
 import random
 import math
+from preprocess import get_dataset
 
 def getHyperparams():
     epochs = 10
@@ -34,6 +35,26 @@ def customLoss(true, pred):
     # Average this custom loss over the batch
     return tf.reduce_mean(custom_loss)
 
+def customAccuracy(true, pred):
+    # Isolate the first element and the remaining elements
+    first_element_true = true[:, 0]
+    first_element_pred = pred[:, 0]
+    remaining_true = true[:, 1:]
+    remaining_pred = pred[:, 1:]
+
+    confidence = first_element_pred
+    boxAcc = 1 - tf.nn.sigmoid(tf.reduce_mean(tf.square(remaining_true - remaining_pred), axis=1))
+    # Accuracy if there is a car in frame
+    yesAcc = (confidence / 2) + (boxAcc / 2)
+
+   # Accuracy if the car is not in frame
+    noAcc = 1 - confidence
+    
+    custom_acc = first_element_true * (yesAcc) + (1 - first_element_true) * (noAcc)
+
+    # Average this custom loss over the batch
+    return tf.reduce_mean(custom_acc)
+
 def getLocatorModel(rate):
     model = tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(32, (3, 3), padding='same'),
@@ -46,7 +67,10 @@ def getLocatorModel(rate):
         tf.keras.layers.LeakyReLU(alpha=0.1),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Conv2D(5, (1, 1), activation='sigmoid')
+        tf.keras.layers.Conv2D(5, (1, 1)),
+
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(5, activation='sigmoid')
     ])
 
     model.compile(
@@ -60,12 +84,7 @@ def getLocatorModel(rate):
 def main():
     # Get the data
 
-    x_train = None
-    y_train= None
-    x_val = None
-    y_val = None
-    x_test = None
-    y_test = None
+    x_train, y_train, x_val, y_val, x_test, y_test = get_dataset("data/images", 'data/labels')
 
     params = getHyperparams()
 
