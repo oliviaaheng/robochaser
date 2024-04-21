@@ -7,13 +7,13 @@ from preprocess import get_dataset
 
 def getHyperparams():
     epochs = 10
-    batchSize = 64
+    batch_size = 64
 
-    trainingRate = 0.01
+    training_rate = 0.01
 
-    return [epochs, batchSize, trainingRate]
+    return [epochs, batch_size, training_rate]
 
-def customLoss(true, pred):
+def my_loss(true, pred):
     # Isolate the first element and the remaining elements
     first_element_true = true[:, 0]
     first_element_pred = pred[:, 0]
@@ -35,29 +35,29 @@ def customLoss(true, pred):
     # Average this custom loss over the batch
     return tf.reduce_mean(custom_loss)
 
-def customAccuracy(true, pred):
+def my_accuracy(true, pred):
     # Isolate the first element and the remaining elements
-    first_element_true = true[:, 0]
-    first_element_pred = pred[:, 0]
-    remaining_true = true[:, 1:]
-    remaining_pred = pred[:, 1:]
+    confidence_label = true[:, 0]
+    confidence_pred = pred[:, 0]
+    box_label = true[:, 1:]
+    box_pred = pred[:, 1:]
 
-    confidence = first_element_pred
-    boxAcc = 1 - tf.nn.sigmoid(tf.reduce_mean(tf.square(remaining_true - remaining_pred), axis=1))
+    confidence = confidence_pred
+    box_acc = 1 - tf.nn.sigmoid(tf.reduce_mean(tf.square(box_label - box_pred), axis=1))
     # Accuracy if there is a car in frame
-    yesAcc = (confidence / 2) + (boxAcc / 2)
+    yes_acc = (confidence / 2) + (box_acc / 2)
 
    # Accuracy if the car is not in frame
-    noAcc = 1 - confidence
+    no_acc = 1 - confidence
     
-    custom_acc = first_element_true * (yesAcc) + (1 - first_element_true) * (noAcc)
+    custom_acc = confidence_label * (yes_acc) + (1 - confidence_label) * (no_acc)
 
     # Average this custom loss over the batch
     return tf.reduce_mean(custom_acc)
 
 def getLocatorModel(rate):
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(32, (3, 3), padding='same'),
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.LeakyReLU(alpha=0.1),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
@@ -67,16 +67,33 @@ def getLocatorModel(rate):
         tf.keras.layers.LeakyReLU(alpha=0.1),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Conv2D(5, (1, 1)),
+        tf.keras.layers.Conv2D(64, (5, 5), padding='valid'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(5, activation='sigmoid')
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.MaxPooling2D(pool_size=(1, 5)),
+
+        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+
+        tf.keras.layers.Conv2D(1, (3, 3), padding='same', activation='sigmoid'),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.MaxPooling2D(pool_size=(5, 5)),
+
+        tf.keras.layers.Flatten()
     ])
 
     model.compile(
         optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=rate), 
-        loss=customLoss, 
-        metrics=['accuracy'],
+        loss=my_loss, 
+        metrics=[my_accuracy],
     )
 
     return model
@@ -90,11 +107,15 @@ def main():
 
     locator = getLocatorModel(params[2])
 
+    locator.build((1, 416, 416, 3))
+    locator.summary()
+
     trainStats = locator.fit(x_train, y_train,
                     batch_size=params[1],  # Specify your desired batch size
                     epochs=params[0],
                     validation_data=(x_val, y_val))
     
+    print("Evaluate on Test Data")
     locator.evaluate(x_test, y_test)
 
     locator.save('locator')

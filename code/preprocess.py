@@ -5,8 +5,13 @@ import numpy as np
 # generate labels with [confidence level, x center, y center, width, height]
 # for no object detected, the label will be all zeros, and treated in the loss
 
+def is_image_file(filename):
+    """Check if a file is an image based on its extension."""
+    valid_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
+    return any(filename.lower().endswith(ext) for ext in valid_extensions)
+
 def load_data(image_dir, label_dir):
-    image_paths = [os.path.join(image_dir, file) for file in os.listdir(image_dir)]
+    image_paths = [os.path.join(image_dir, file) for file in os.listdir(image_dir) if is_image_file(file)]
     label_paths = [os.path.join(label_dir, file) for file in os.listdir(label_dir)]
 
     images = []
@@ -15,7 +20,7 @@ def load_data(image_dir, label_dir):
     for img_path, lbl_path in zip(image_paths, label_paths):
         # Load image
         image = tf.io.read_file(img_path)
-        image = tf.image.decode_jpeg(image, channels=3)  # Adjust channels as needed
+        image = tf.image.decode_image(image, channels=3)  # Adjust channels as needed
         image = tf.cast(image, tf.float32) / 255.0  # Convert to float32 and normalize
 
         # Load label
