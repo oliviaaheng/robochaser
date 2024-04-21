@@ -6,8 +6,8 @@ import math
 from preprocess import get_dataset
 
 def getHyperparams():
-    epochs = 10
-    batch_size = 64
+    epochs = 2
+    batch_size = 8
 
     training_rate = 0.01
 
@@ -30,7 +30,7 @@ def my_loss(true, pred):
     # If the label is all zeros (no image detected), the loss will only be dependent on the
     # confidence score, the first elements. Loss will be higher if a high confidence score 
     # is given to a zero nothing label.
-    custom_loss = first_element_true * mse_remaining + mse_first
+    custom_loss = (first_element_true * ((mse_remaining / 2) + (mse_first / 2))) + ((1 - first_element_true) * (mse_first))
 
     # Average this custom loss over the batch
     return tf.reduce_mean(custom_loss)
@@ -75,19 +75,22 @@ def getLocatorModel(rate):
         tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(1, 5)),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
         tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.LeakyReLU(alpha=0.1),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Conv2D(1, (3, 3), padding='same', activation='sigmoid'),
+        tf.keras.layers.Conv2D(16, (3, 3), padding='same',),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(5, 5)),
+        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Flatten()
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(64),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.Dense(5, activation='sigmoid')
     ])
 
     model.compile(
