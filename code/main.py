@@ -6,8 +6,8 @@ import math
 from preprocess import get_dataset
 
 def getHyperparams():
-    epochs = 2
-    batch_size = 8
+    epochs = 3
+    batch_size = 16
 
     training_rate = 0.01
 
@@ -30,10 +30,11 @@ def my_loss(true, pred):
     # If the label is all zeros (no image detected), the loss will only be dependent on the
     # confidence score, the first elements. Loss will be higher if a high confidence score 
     # is given to a zero nothing label.
-    custom_loss = (first_element_true * ((mse_remaining / 2) + (mse_first / 2))) + ((1 - first_element_true) * (mse_first))
+    # custom_loss = (first_element_true * ((mse_remaining / 2) + (mse_first / 2))) + ((1 - first_element_true) * (mse_first))
 
     # Average this custom loss over the batch
-    return tf.reduce_mean(custom_loss)
+    # CURRENTLY JUST TESTING CONFIDENCE
+    return tf.reduce_mean(mse_first)
 
 def my_accuracy(true, pred):
     # Isolate the first element and the remaining elements
@@ -45,51 +46,49 @@ def my_accuracy(true, pred):
     confidence = confidence_pred
     box_acc = 1 - tf.nn.sigmoid(tf.reduce_mean(tf.square(box_label - box_pred), axis=1))
     # Accuracy if there is a car in frame
-    yes_acc = (confidence / 2) + (box_acc / 2)
 
-   # Accuracy if the car is not in frame
+    # OLD ACCURACY
+    # yes_acc = (confidence / 2) + (box_acc / 2)
+    # TEMPORARY ACCURACY
+    yes_acc = confidence
+
+    # Accuracy if the car is not in frame
     no_acc = 1 - confidence
     
     custom_acc = confidence_label * (yes_acc) + (1 - confidence_label) * (no_acc)
+
+    # tf.print(tf.reduce_mean(custom_acc))
 
     # Average this custom loss over the batch
     return tf.reduce_mean(custom_acc)
 
 def getLocatorModel(rate):
     model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
-        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(16, 16)),
         tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.BatchNormalization(),
+
+        tf.keras.layers.UpSampling2D(size=(8, 8)),
+
+        tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(8,  8)),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+        tf.keras.layers.BatchNormalization(),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
+        tf.keras.layers.UpSampling2D(size=(4, 4)),
 
-        tf.keras.layers.Conv2D(64, (5, 5), padding='valid'),
-        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Conv2D(64, (5, 5), padding='same', strides=(2, 2)),
         tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
         tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-
-        tf.keras.layers.Conv2D(64, (3, 3), padding='same'),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-
-        tf.keras.layers.Conv2D(16, (3, 3), padding='same',),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
 
         tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(256),
+        tf.keras.layers.LeakyReLU(alpha=0.1),
+
         tf.keras.layers.Dense(64),
         tf.keras.layers.LeakyReLU(alpha=0.1),
+
         tf.keras.layers.Dense(5, activation='sigmoid')
     ])
 

@@ -25,7 +25,7 @@ class Runner():
 def main():
     runner = Runner()
     print("Running model on test image...")
-    print(runner.run("test/IMG_0297000 copy 2.jpeg"))
+    print(runner.run("test/IMG_0299272.png"))
 
 if __name__ == '__main__':
     main()
