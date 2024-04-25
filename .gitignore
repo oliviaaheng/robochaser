@@ -3,3 +3,5 @@ data/
 code/__pycache__
 
 locator
+
+test/
