@@ -5,7 +5,7 @@ from main import my_accuracy, my_loss
 
 class Runner():
     def __init__(self):
-        self.model = tf.keras.models.load_model("locator", 
+        self.model = tf.keras.models.load_model("locator.keras", 
             custom_objects={'my_accuracy': my_accuracy, 'my_loss': my_loss})
 
     def run(self, path):

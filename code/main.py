@@ -4,10 +4,11 @@ import numpy as np
 import random
 import math
 from preprocess import get_dataset
+from finder import Finder
 
 def getHyperparams():
-    epochs = 3
-    batch_size = 16
+    epochs = 2
+    batch_size = 32
 
     training_rate = 0.01
 
@@ -63,37 +64,10 @@ def my_accuracy(true, pred):
     return tf.reduce_mean(custom_acc)
 
 def getLocatorModel(rate):
-    model = tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(16, 16)),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.BatchNormalization(),
-
-        tf.keras.layers.UpSampling2D(size=(8, 8)),
-
-        tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(8,  8)),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-
-        tf.keras.layers.UpSampling2D(size=(4, 4)),
-
-        tf.keras.layers.Conv2D(64, (5, 5), padding='same', strides=(2, 2)),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
-
-        tf.keras.layers.Flatten(),
-        tf.keras.layers.Dense(256),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-
-        tf.keras.layers.Dense(64),
-        tf.keras.layers.LeakyReLU(alpha=0.1),
-
-        tf.keras.layers.Dense(5, activation='sigmoid')
-    ])
+    model = Finder()
 
     model.compile(
-        optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=rate), 
+        optimizer=tf.keras.optimizers.Adam(learning_rate=rate), 
         loss=my_loss, 
         metrics=[my_accuracy],
     )
@@ -120,7 +94,7 @@ def main():
     print("Evaluate on Test Data")
     locator.evaluate(x_test, y_test)
 
-    locator.save('locator')
+    locator.save('locator.keras')
 
     return 0
 
