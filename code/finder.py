@@ -1,5 +1,4 @@
 # Put new model here
-
 import tensorflow as tf
 
 class Finder(tf.keras.Model):
@@ -7,57 +6,99 @@ class Finder(tf.keras.Model):
     def __init__(self, **kwargs):
 
         super().__init__(**kwargs)
+        # Feature extraction
+        self.resnet = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, input_shape=(416, 416, 3))
 
+        self.resize = tf.keras.layers.UpSampling2D(size=(32, 32))
 
-        self.c1 = tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(16, 16))
-        self.r1 = tf.keras.layers.LeakyReLU(alpha=0.1)
-        self.n1 = tf.keras.layers.BatchNormalization()
-        self.u1 = tf.keras.layers.UpSampling2D(size=(8, 8))
+        self.smallDetection = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(32, 32)),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.BatchNormalization(),
+        ])
 
-        self.c2 = tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(8,  8))
-        self.r2 = tf.keras.layers.LeakyReLU(alpha=0.1)
-        self.n2 = tf.keras.layers.BatchNormalization()
-        self.p2 = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))
-        self.u2 = tf.keras.layers.UpSampling2D(size=(4, 4))
+        self.upToMedium = tf.keras.layers.UpSampling2D(size=(32, 32))
 
-        self.c3 = tf.keras.layers.Conv2D(64, (5, 5), padding='same', strides=(2, 2))
-        self.r3 = tf.keras.layers.LeakyReLU(alpha=0.1)
-        self.n3 = tf.keras.layers.BatchNormalization()
-        self.p3 = tf.keras.layers.MaxPooling2D(pool_size=(2, 2))
+        self.mediumDetection = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(16, 16)),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.BatchNormalization(),
+        ])
 
-        self.f4 = tf.keras.layers.Flatten()
-        self.d4 = tf.keras.layers.Dense(256)
-        self.r4 = tf.keras.layers.LeakyReLU(alpha=0.1)
+        self.upToLarge = tf.keras.layers.UpSampling2D(size=(16, 16))
 
-        self.d5 = tf.keras.layers.Dense(64)
-        self.r5 = tf.keras.layers.LeakyReLU(alpha=0.1)
+        self.largeDetection = tf.keras.Sequential([
+            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(8, 8)),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.BatchNormalization(),
+        ])
 
-        self.d6 = tf.keras.layers.Dense(5, activation='sigmoid')
+        self.smallPred = tf.keras.Sequential([
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(64),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(5, activation='sigmoid')
+        ])
+
+        self.mediumPred = tf.keras.Sequential([
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(64),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(5, activation='sigmoid')
+        ])
+
+        self.largePred = tf.keras.Sequential([
+            tf.keras.layers.Flatten(),
+            tf.keras.layers.Dense(512),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(64),
+            tf.keras.layers.LeakyReLU(alpha=0.1),
+            tf.keras.layers.Dense(5, activation='sigmoid')
+        ])
+
+        self.adder = tf.keras.layers.Add()
 
     def call(self, x):
-        x = self.c1(x)
-        x = self.r1(x)
-        x = self.n1(x)
-        x = self.u1(x)
+        # Feature extraction
+        x = self.resnet(x)
+        x = self.resize(x)
 
-        x = self.c2(x)
-        x = self.r2(x)
-        x = self.n2(x)
-        x = self.p2(x)
-        x = self.u2(x)
+        # Save large residual
+        large_residual = x
 
-        x = self.c3(x)
-        x = self.r3(x)
-        x = self.n3(x)
-        x = self.p3(x)
+        # Save medium residual
+        medium_residual = x
 
-        x = self.f4(x)
-        x = self.d4(x)
-        x = self.r4(x)
+        # Scale down to small detection
+        small = self.smallDetection(x)
 
-        x = self.d5(x)
-        x = self.r5(x)
+        # Upsample to medium size
+        x = self.upToMedium(small)
 
-        x = self.d6(x)
+        # Add back medium residual
+        x = self.adder([x, medium_residual])
 
-        return x
+        # Medium detection
+        medium = self.mediumDetection(x)
+
+        # Upscale to large
+        x = self.upToLarge(medium)
+
+        # Add back large residual
+        x = self.adder([x, large_residual])
+
+        # Large detection
+        large = self.largeDetection(x)
+
+        large = self.largePred(large)
+        medium = self.mediumPred(medium)
+        small = self.smallPred(small)
+
+        pred = self.adder([large, small, medium])
+
+        return pred
+    
