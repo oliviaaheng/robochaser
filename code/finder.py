@@ -9,10 +9,16 @@ class Finder(tf.keras.Model):
         # Feature extraction
         self.resnet = tf.keras.applications.ResNet50(weights='imagenet', include_top=False, input_shape=(416, 416, 3))
 
-        self.resize = tf.keras.layers.UpSampling2D(size=(32, 32))
+        for layer in self.resnet.layers:
+            layer.trainable = False
+
+        self.resize = tf.keras.Sequential([
+            tf.keras.layers.UpSampling2D(size=(32, 32)),
+            tf.keras.layers.Conv2D(128, (1, 1), padding='same', strides=(1, 1))
+        ])
 
         self.smallDetection = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(32, 32)),
+            tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(32, 32)),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.BatchNormalization(),
         ])
@@ -20,7 +26,7 @@ class Finder(tf.keras.Model):
         self.upToMedium = tf.keras.layers.UpSampling2D(size=(32, 32))
 
         self.mediumDetection = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(16, 16)),
+            tf.keras.layers.Conv2D(128, (3, 3), padding='same', strides=(16, 16)),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.BatchNormalization(),
         ])
@@ -28,15 +34,13 @@ class Finder(tf.keras.Model):
         self.upToLarge = tf.keras.layers.UpSampling2D(size=(16, 16))
 
         self.largeDetection = tf.keras.Sequential([
-            tf.keras.layers.Conv2D(2048, (3, 3), padding='same', strides=(8, 8)),
+            tf.keras.layers.Conv2D(32, (3, 3), padding='same', strides=(8, 8)),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.BatchNormalization(),
         ])
 
         self.smallPred = tf.keras.Sequential([
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512),
-            tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.Dense(64),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.Dense(5, activation='sigmoid')
@@ -44,18 +48,14 @@ class Finder(tf.keras.Model):
 
         self.mediumPred = tf.keras.Sequential([
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512),
-            tf.keras.layers.LeakyReLU(alpha=0.1),
-            tf.keras.layers.Dense(64),
+            tf.keras.layers.Dense(16),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.Dense(5, activation='sigmoid')
         ])
 
         self.largePred = tf.keras.Sequential([
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(512),
-            tf.keras.layers.LeakyReLU(alpha=0.1),
-            tf.keras.layers.Dense(64),
+            tf.keras.layers.Dense(16),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.Dense(5, activation='sigmoid')
         ])
@@ -100,5 +100,5 @@ class Finder(tf.keras.Model):
 
         pred = self.adder([large, small, medium])
 
-        return pred
+        return tf.keras.activations.sigmoid(pred)
     

@@ -5,3 +5,7 @@ code/__pycache__
 locator
 
 test/
+
+*.keras
+
+locator.keras
