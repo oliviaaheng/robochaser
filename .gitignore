@@ -9,3 +9,5 @@ test/
 *.keras
 
 locator.keras
+
+segment/toycar-detection/
