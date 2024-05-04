@@ -5,20 +5,34 @@ import random
 import math
 from preprocess import get_dataset
 from finder import Finder
-from metrics import my_accuracy, my_loss
+from simple import Simple
+from metrics import my_accuracy, my_loss, acc
 
 def getHyperparams():
-    epochs = 2
+    epochs = 1
     batch_size = 16
 
     training_rate = 0.01
 
     return [epochs, batch_size, training_rate]
 
-def main():
-    # Get the data
+def getSimple():
+    x_train, y_train, x_val, y_val, x_test, y_test = get_dataset(False, "data/images", 'data/labels')
 
-    x_train, y_train, x_val, y_val, x_test, y_test = get_dataset("data/images", 'data/labels')
+    params = getHyperparams()
+
+    locator = Simple()
+
+    locator.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=params[2]), 
+        loss='mse', 
+        metrics=[acc],
+    )
+
+    return locator, params, x_train, y_train, x_val, y_val, x_test, y_test
+
+def getFull():
+    x_train, y_train, x_val, y_val, x_test, y_test = get_dataset(True, "data/images", 'data/labels')
 
     params = getHyperparams()
 
@@ -30,7 +44,17 @@ def main():
         metrics=[my_accuracy],
     )
 
-    locator.build((1, 416, 416, 3))
+    return locator, params, x_train, y_train, x_val, y_val, x_test, y_test
+
+def main():
+    # Simple model...
+    # locator, params, x_train, y_train, x_val, y_val, x_test, y_test = getSimple()
+
+    # Full model...
+    locator, params, x_train, y_train, x_val, y_val, x_test, y_test = getFull()
+
+    x = tf.ones((1, 416, 416, 3))
+    locator.call(x)
     locator.summary()
 
     trainStats = locator.fit(x_train, y_train,

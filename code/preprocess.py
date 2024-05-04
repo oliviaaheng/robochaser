@@ -10,7 +10,7 @@ def is_image_file(filename):
     valid_extensions = ['.png', '.jpg', '.jpeg', '.bmp', '.gif']
     return any(filename.lower().endswith(ext) for ext in valid_extensions)
 
-def load_data(image_dir, label_dir):
+def load_data(full, image_dir, label_dir):
     image_paths = [os.path.join(image_dir, file) for file in os.listdir(image_dir) if is_image_file(file)]
     label_paths = [os.path.join(label_dir, file) for file in os.listdir(label_dir)]
 
@@ -27,16 +27,23 @@ def load_data(image_dir, label_dir):
         if os.path.getsize(lbl_path) > 0:
             label = tf.io.read_file(lbl_path)
             label = tf.strings.to_number(tf.strings.split(label, ' '), out_type=tf.float32)
+            
+            # for simple
+            if not full:
+                label = [label[0]]
         else:
             label = tf.zeros([5], dtype=tf.float32)
+            
+            if not full:
+                label = [label[0]]
 
         images.append(image)
         labels.append(label)
 
     return images, labels
 
-def get_dataset(image_dir, label_dir):
-    images, labels = load_data(image_dir, label_dir)
+def get_dataset(full, image_dir, label_dir):
+    images, labels = load_data(full, image_dir, label_dir)
 
     x = tf.stack(images)
     y = tf.stack(labels)

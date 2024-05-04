@@ -1,12 +1,12 @@
 import tensorflow as tf
 import numpy as np
 
-from main import my_accuracy, my_loss
+from main import my_accuracy, my_loss, acc
 
 class Runner():
     def __init__(self):
         self.model = tf.keras.models.load_model("locator.keras", 
-            custom_objects={'my_accuracy': my_accuracy, 'my_loss': my_loss})
+            custom_objects={'my_accuracy': my_accuracy, 'my_loss': my_loss, 'acc': acc})
 
     def run(self, path):
         return self.model.predict(self.loadImage(path))
