@@ -3,14 +3,14 @@
 The code for this project is separated into 2 locations and 4 parts total.
 
 In this github repository.. there is YoloV3 Mimic and YoloV8 Custom, and in google 
-collaboratory, there is YoloV8 Custom Dataset.ipynb, and Classifier.ipynb. The links 
+collaboratory, there is YoloV8 Custom Dataset.ipynb, and Robochaser.ipynb. The links 
 to the notebooks are...
 
 YoloV8 Custom Dataset.ipynb:
 
 https://colab.research.google.com/drive/1BWBPR-3JByzCpfTfLLK-QWccXgno4xnJ?usp=sharing 
 
-Classifier.ipynb:
+Robochaser.ipynb:
 
 https://colab.research.google.com/drive/1kXrwOf2AtftOlT595oGaUWyG50dLOMRg?usp=sharing
 
@@ -21,7 +21,7 @@ This google collaboratory notebook was used to upload our dataset from Roboflow,
 and then train the state of the art YoloV8 model to detect our toycar, and give 
 accurate bounding box predictions. More details can be found in the notebook.
 
-#### Classifier
+#### Robochaser
 This notebook defines a custom model architechture that uses resnet50 as a backbone 
 for feature extraction, followed by dense layers. After realizing our data was not 
 sufficient to train a Yolo-like model from scratch, we realized we could acheive 
