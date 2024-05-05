@@ -11,3 +11,5 @@ test/
 locator.keras
 
 segment/toycar-detection/
+
+segment/models/
