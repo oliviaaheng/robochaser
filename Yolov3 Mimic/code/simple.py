@@ -22,20 +22,13 @@ class Simple(tf.keras.Model):
             tf.keras.layers.MaxPooling2D(pool_size=(2, 2), padding='same')
         ])
 
-        self.mediumDetection = tf.keras.Sequential([
+        self.detection = tf.keras.Sequential([
             tf.keras.layers.Conv2D(32, (3, 3), padding='same', strides=(16, 16)),
             tf.keras.layers.LeakyReLU(alpha=0.1),
             tf.keras.layers.BatchNormalization(),
         ])
 
-        self.mediumPred = tf.keras.Sequential([
-            tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(32),
-            tf.keras.layers.LeakyReLU(alpha=0.1),
-            tf.keras.layers.Dense(1, activation='sigmoid')
-        ])
-
-        self.dense = tf.keras.Sequential([
+        self.pred = tf.keras.Sequential([
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(32),
             tf.keras.layers.LeakyReLU(alpha=0.1),
@@ -52,9 +45,9 @@ class Simple(tf.keras.Model):
 
         x = self.adder([x, residual])
 
-        x = self.mediumDetection(x)
+        x = self.detection(x)
 
-        x = self.mediumPred(x)
+        x = self.pred(x)
         
         return tf.keras.activations.sigmoid(x)
     
