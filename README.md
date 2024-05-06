@@ -1,8 +1,8 @@
-# Robo-chaser
+# RoboChaser
 
 The code for this project is separated into 2 locations and 4 parts total.
 
-In this github repository.. there is YoloV3 Mimic and YoloV8 Custom, and in google 
+In this GitHub repository.. there is YoloV3 Mimic and YoloV8 Custom, and in google 
 collaboratory, there is YoloV8 Custom Dataset.ipynb, and Robochaser.ipynb. The links 
 to the notebooks are...
 
@@ -30,8 +30,8 @@ segmentation with the highest probability of being a car. More details can be
 found in the notebook.
 
 #### YoloV3 Mimic
-Our attempt to recreate the YoloV3 architechture in python using tensorflow and 
-train it on our custom model. It contains two versions, of which finder tries to 
+Our attempt to recreate the YoloV3 architecture in python using TensorFlow and 
+train it on our custom model. It contains two versions, of which the finder tries to 
 accurately model YoloV3's structure of a feature extraction backbone connected to 
 3 different sizes of image detection in a feature pyramid network. 
 
@@ -49,16 +49,16 @@ Roboflow, where we added augmentations to create a set of 5000 total images.
 
 ### Custom Metrics
 In order to judge the accuracy of both a car with a bounding box, and a 'none' image 
-with no bounding box, a custom loss and accuarcy function was designed to handle both 
-cases, while maintaining differntiability.
+with no bounding box, a custom loss and accuracy function was designed to handle both 
+cases,while maintaining differentiability.
 
 If the label of the image was a car, then the loss was described by the bounding box loss, 
-and the classification or confidence loss, however it the label was no car, the the loss 
+and the classification or confidence loss; however, it the label was no car, the the loss 
 was only described by the classification or confidence loss. The accuracy was implemented 
 in a similar fashion. 
 
 After several failed attempts at training the full bounding box model, those functions 
-were modified to only focus on classification, too see if the model could at least capture 
+were modified to focus only on classification to see if the model could at least capture 
 that information.
 
 ### Finder Architecture
@@ -93,11 +93,11 @@ PREDICTION
 12. Sum predictions and sigmoid activation
 
 ##### Results
-Initial attempts to train this model led to mode collapse to 1. (the out put no matter 
-the image was always one). We believed that a big cause for this was that we realized
+Initial attempts to train this model led to mode collapse to 1. (the output no matter 
+the image, was always one). We believed that a big cause for this was that we realized
 our dataset at this point consisted of roughly 95% images of the car, and so by guessing
-a car every time, the model could acheive high accuracy. This however, was not fixed by
-addition of more blank images. We decided to simplify the architecture and see if we
+a car every time, the model could achieve high accuracy. This, however, was not fixed by
+the addition of more blank images. We decided to simplify the architecture and see if we
 first simply classify the images.
 
 ### Simple Architecture
@@ -116,9 +116,9 @@ Simple (simple.py) attempts to form a more basic version of Yolo for classificat
 6. Sigmoid activation
 
 ##### Results
-Similar to with Finder, this architecture was unable to capture the toycar, and so 
+Similar to with Finder, this architecture was unable to capture the toy car, and so 
 we decided to try to train our model on YoloV8, to see if the dataset was the issue,
-and not the model itself. In actuality, although YoloV8 was able to train on out data,
+and not the model itself. In actuality, although YoloV8 was able to train on our data,
 we think the data we had was still far from sufficient to train a Yolo-like model
 from scratch.
 
@@ -128,9 +128,9 @@ according to the x value of the bounding box.
 
 #### Model
 The model.py file loads our weights from 'best.pt', which is the file for the weights 
-for YoloV8 that acheived the highest single epoch accuracy during training in the ipynb.
+for YoloV8, which achieved the highest single epoch accuracy during training in the ipynb.
 
 #### Create Movement
 In create_movement.py, we connect to the iRobot, capture images from the webcam, and,
 in a while loop, generate predictions on those images through our model and convert
-those prediction into an angle for our robot to turn. 
+that prediction into an angle for our robot to turn. 
